@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Advanced Quiz App</title>
+
+<!-- ====== Styles ====== -->
+<style>
+  :root{
+    --bg: #e8f5ff;
+    --card: #ffffff;
+    --text: #222;
+    --accent: #2b8cf4;
+    --muted: #666;
+    --good: #2e7d32;
+    --bad: #c62828;
+    --glass: rgba(255,255,255,0.7);
+  }
+
+  body.dark {
+    --bg: #0f1720;
+    --card: #0b1220;
+    --text: #e6eef8;
+    --accent: #6fb3ff;
+    --muted: #9fb3d0;
+    --glass: rgba(255,255,255,0.04);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: linear-gradient(180deg,var(--bg), #f6fbff);
+    color:var(--text);
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:24px;
+    transition:background .35s ease, color .25s ease;
+  }
+
+  .container{
+    width:100%;
+    max-width:980px;
+    margin:16px;
+  }
+
+  .toolbar{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:center;
+    margin-bottom:12px;
+  }
+
+  .brand{
+    display:flex;align-items:center;gap:12px;
+  }
+
+  .logo{
+    width:52px;height:52px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;box-shadow:0 6px 18px rgba(43,140,244,.15);
+  }
+
+  .title{font-size:18px;font-weight:700}
+  .subtitle{font-size:12px;color:var(--muted)}
+
+  .controls{display:flex;gap:8px;align-items:center}
+  button, .btn {
+    border: none;
+    background: var(--accent);
+    color: white;
+    padding:8px 12px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:600;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  button:hover, .btn:hover{ transform:translateY(-2px) }
+  .btn.secondary{ background:transparent;color:var(--text);border:1px solid rgba(0,0,0,0.06) }
+  .small{padding:6px 8px;font-size:13px}
+  .icon{opacity:.9;margin-right:8px}
+
+  .card{
+    background:var(--card);
+    border-radius:12px;
+    padding:18px;
+    box-shadow: 0 10px 30px rgba(2,6,23,0.06);
+    transition:transform .25s ease, box-shadow .25s ease, background .25s ease;
+    overflow:hidden;
+  }
+
+  .main{
+    display:grid;
+    grid-template-columns: 1fr 320px;
+    gap:16px;
+  }
+
+  @media (max-width:880px){
+    .main{ grid-template-columns: 1fr; }
+    .aside{ order: 2; }
+  }
+
+  /* quiz area */
+  .quiz-card{ min-height:340px; display:flex; flex-direction:column; gap:12px; }
+  .meta-row{ display:flex; justify-content:space-between; gap:8px; align-items:center; }
+  .timers{ display:flex; gap:8px; align-items:center; font-weight:600; color:var(--muted) }
+  .progress-wrap{ width:100%; background:linear-gradient(90deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02)); height:12px;border-radius:8px; overflow:hidden; }
+  .progress-bar{ height:100%; width:0%; background:linear-gradient(90deg,var(--accent), #36b3ff); transition:width .35s ease; }
+
+  .question-area{
+    padding:12px;border-radius:8px;
+    background: var(--glass);
+    border: 1px solid rgba(2,6,23,0.04);
+    transition: transform .28s cubic-bezier(.2,.9,.3,1), opacity .28s ease;
+  }
+
+  .question{
+    font-size:18px;font-weight:700;margin-bottom:10px;
+  }
+
+  .options{ display:flex; flex-direction:column; gap:8px; }
+  .option{
+    display:flex;align-items:center; gap:10px;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.05);
+    background:transparent; cursor:pointer; transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .option:hover{ transform:translateY(-3px) }
+  .option input{ width:18px;height:18px }
+  .option.checked{ box-shadow:0 4px 20px rgba(0,0,0,0.06); background:linear-gradient(180deg,rgba(255,255,255,0.03), rgba(255,255,255,0.01));}
+  .option.correct{ border-color: rgba(46,125,50,.45); background:rgba(46,125,50,0.06) }
+  .option.wrong{ border-color: rgba(198,40,40,.45); background:rgba(198,40,40,0.06) }
+
+  .nav-row{ display:flex; gap:8px; align-items:center; margin-top:8px; }
+  .pager{ display:flex; gap:6px; flex-wrap:wrap }
+  .pager button{ padding:6px 8px; border-radius:6px; background:transparent; border:1px dashed rgba(0,0,0,0.06); color:var(--muted); font-weight:600 }
+  .pager button.active{ background:var(--accent); color:white; border:none }
+
+  .aside{ display:flex; flex-direction:column; gap:12px; min-width:260px;}
+  .panel{ padding:12px; border-radius:8px; background:var(--glass); border:1px solid rgba(0,0,0,0.04) }
+
+  .stat{ display:flex; justify-content:space-between; gap:8px; align-items:center; font-weight:700; font-size:14px; color:var(--muted) }
+
+  .summary-list{ display:flex; flex-direction:column; gap:8px; max-height:260px; overflow:auto; }
+
+  .result{ text-align:center; padding:12px; border-radius:8px }
+  .result .score{ font-size:30px; font-weight:800; color:var(--accent) }
+
+  input[type="text"], input[type="password"]{
+    width:100%; padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06); background:transparent; color:var(--text)
+  }
+
+  label.small { font-size:12px; color:var(--muted); display:block; margin-bottom:6px }
+
+  footer { text-align:center; padding:10px; color:var(--muted); font-size:13px }
+
+  /* nice animations */
+  .fadeIn { animation:fadeIn .35s ease both }
+  .slideLeft { animation:slideLeft .35s ease both }
+  @keyframes fadeIn { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none} }
+  @keyframes slideLeft { from{opacity:0; transform:translateX(12px)} to{opacity:1; transform:none} }
+
+  .tiny { font-size:12px; color:var(--muted) }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="brand">
+      <div class="logo">QZ</div>
+      <div>
+        <div class="title">Advanced Quiz App</div>
+        <div class="subtitle">Interactive, timed, save/resume & certificate</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="tiny">Theme</div>
+      <button id="themeToggle" class="small btn secondary">🌙</button>
+      <div style="width:8px"></div>
+      <button id="saveProgressBtn" class="small btn">💾 Save</button>
+      <button id="downloadCertificate" class="small btn">🎫 Certificate</button>
+      <button id="logoutBtn" class="small btn secondary">Logout</button>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+    <div class="card quiz-card">
+
+      <!-- Login / Welcome -->
+      <div id="loginCard" class="card" style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:700">Welcome</div>
+            <div class="tiny">Please login or signup to begin the quiz. (Demo auth, stored in browser)</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button id="showSignup" class="btn small">Sign Up</button>
+            <button id="showLogin" class="btn small secondary">Login</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quiz -->
+      <div id="quizArea" class="fadeIn" style="display:none">
+        <div class="meta-row">
+          <div class="timers">
+            <div id="perQuestionTimer">Per Q: --</div>
+            <div id="totalTimer">Total: --</div>
+          </div>
+
+          <div style="display:flex;gap:8px;align-items:center">
+            <div class="tiny">Question <span id="currentIndex">0</span>/<span id="totalQ">0</span></div>
+          </div>
+        </div>
+
+        <div class="progress-wrap">
+          <div id="progressBar" class="progress-bar"></div>
+        </div>
+
+        <div id="questionWrap" class="question-area slideLeft">
+          <div id="questionText" class="question">Question will appear here</div>
+          <div id="optionsWrap" class="options"></div>
+
+          <div class="nav-row">
+            <div class="pager" id="pager"></div>
+            <div style="flex:1"></div>
+            <button id="prevBtn" class="small btn secondary">⬅ Prev</button>
+            <button id="nextBtn" class="small btn">Next ➡</button>
+            <button id="submitBtn" class="small btn" style="display:none">Submit</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Result -->
+      <div id="resultCard" class="card" style="display:none; margin-top:12px;">
+        <div class="result">
+          <div class="score" id="finalScore">0 / 0</div>
+          <div id="percentage"></div>
+          <div id="correctWrong" style="margin-top:8px;"></div>
+          <div style="margin-top:12px">
+            <button id="viewSummaryBtn" class="btn small secondary">View Summary</button>
+            <button id="retryBtn" class="btn small">Retry Quiz</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Aside -->
+    <div class="aside">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:14px;font-weight:800" id="userWelcome">Not logged in</div>
+            <div class="tiny" id="userEmail"></div>
+          </div>
+          <div>
+            <div class="tiny">Saved</div>
+            <div id="savedIndicator" style="text-align:right;color:var(--muted)">No</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="stat"><div>Progress</div><div id="statProgress">0%</div></div>
+        <div style="height:12px; margin-top:8px; background:rgba(0,0,0,0.03); border-radius:8px; overflow:hidden">
+          <div id="miniProgress" style="height:12px; width:0%; background:linear-gradient(90deg,var(--accent),#36b3ff);"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><b>Scoreboard</b><div class="tiny">Saved attempts</div></div>
+          <button id="clearScores" class="small btn secondary">Clear</button>
+        </div>
+        <div id="scoreboard" class="summary-list" style="margin-top:8px"></div>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><b>Settings</b><div class="tiny">Timers & randomization</div></div>
+        </div>
+        <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <label class="small">Per Q (sec)</label>
+            <input id="perQInput" type="text" value="20" />
+          </div>
+          <div>
+            <label class="small">Total (sec)</label>
+            <input id="totalInput" type="text" value="180" />
+          </div>
+        </div>
+
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <label style="display:flex;gap:6px;align-items:center"><input id="randQ" type="checkbox" checked>Random Q</label>
+          <label style="display:flex;gap:6px;align-items:center"><input id="randOpt" type="checkbox" checked>Random Opt</label>
+        </div>
+
+        <div style="margin-top:10px">
+          <button id="startQuizBtn" class="btn">Start Quiz</button>
+          <button id="resumeBtn" class="btn secondary">Resume Last</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Summary Modal (simple) -->
+  <div id="summaryModal" style="display:none; position:fixed; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; padding:24px;">
+    <div style="max-width:760px; width:100%; background:var(--card); border-radius:10px; padding:18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><b>Quiz Summary</b><div class="tiny">Your answers & correct answers</div></div>
+        <div><button id="closeSummary" class="btn small secondary">Close</button></div>
+      </div>
+
+      <div id="summaryContent" style="margin-top:12px; max-height:60vh; overflow:auto"></div>
+    </div>
+  </div>
+
+  <!-- Login / Signup Modal -->
+  <div id="authModal" style="display:none; position:fixed; left:0; top:0; right:0; bottom:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; padding:24px;">
+    <div style="max-width:420px; width:100%; background:var(--card); border-radius:10px; padding:18px;">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><b id="authTitle">Login</b><div class="tiny" id="authDesc">Enter your credentials</div></div>
+        <div><button id="closeAuth" class="btn small secondary">Close</button></div>
+      </div>
+
+      <div style="margin-top:12px">
+        <label class="small">Username</label>
+        <input id="authUsername" type="text" />
+        <label class="small">Password</label>
+        <input id="authPassword" type="password" />
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button id="authSubmit" class="btn">Submit</button>
+          <button id="toggleAuthMode" class="btn secondary">Switch to Sign Up</button>
+        </div>
+        <div id="authMessage" class="tiny" style="margin-top:8px;color:var(--muted)"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Built for demo — Not production auth. PDF uses jsPDF & html2canvas CDN.</footer>
+</div>
+
+<!-- ====== External libraries for PDF generation ====== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- ====== Quiz Logic ====== -->
+<script>
+/* =========================
+   CONFIG: Add/modify questions here
+   Each question: { q: '', options: [{id:'a',text:''},...], correct: 'a' }
+   ========================= */
+const rawQuizData = [
+  { q: "What does HTML stand for?", options: [{id:'a',text:'Hyper Text Markup Language'},{id:'b',text:'High Text Machine Language'},{id:'c',text:'Hyper Tabular Markup Language'},{id:'d',text:'None of these'}], correct: 'a' },
+  { q: "Which language is used for styling web pages?", options: [{id:'a',text:'HTML'},{id:'b',text:'CSS'},{id:'c',text:'Python'},{id:'d',text:'C++'}], correct: 'b' },
+  { q: "JavaScript is a ___ language?", options: [{id:'a',text:'Programming'},{id:'b',text:'Markup'},{id:'c',text:'Machine'},{id:'d',text:'Database'}], correct: 'a' },
+  { q: "Which HTML element do we put the JavaScript in?", options: [{id:'a',text:'<js>'},{id:'b',text:'<script>'},{id:'c',text:'<javascript>'},{id:'d',text:'<code>'}], correct: 'b' },
+  { q: "Which method converts JSON to a JavaScript object?", options: [{id:'a',text:'JSON.parse()'},{id:'b',text:'JSON.stringify()'},{id:'c',text:'JSON.object()'},{id:'d',text:'parse.JSON()'}], correct: 'a' },
+  { q: "Which CSS property controls the text size?", options: [{id:'a',text:'font-style'},{id:'b',text:'font-weight'},{id:'c',text:'font-size'},{id:'d',text:'text-style'}], correct: 'c' }
+];
+// You can add unlimited questions by adding objects like the above to rawQuizData
+
+/* =========================
+   State & helpers
+   ========================= */
+let quizData = [];            // shuffled / working copy
+let currentIndex = 0;
+let answers = {};            // {index: selectedId}
+let perQTimer = null;
+let totalTimer = null;
+let perQTimeLeft = 0;
+let totalTimeLeft = 0;
+let perQuestionSeconds = 20;
+let totalSeconds = 180;
+let user = null;             // {username,email}
+let settings = {
+  randomizeQuestions: true,
+  randomizeOptions: true,
+  persistKey: 'advanced_quiz_v1'
+};
+
+/* -------------------
+   Utility helpers
+   ------------------- */
+const $ = (id)=>document.getElementById(id);
+
+function shuffleArray(a){
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+/* =========================
+   AUTH (simple localStorage)
+   ========================= */
+function getUsers(){ return JSON.parse(localStorage.getItem('quiz_users')||'{}'); }
+function saveUsers(u){ localStorage.setItem('quiz_users', JSON.stringify(u)); }
+
+function showAuth(mode='login'){
+  $('authModal').style.display='flex';
+  $('authTitle').innerText = mode==='login'? 'Login' : 'Sign Up';
+  $('toggleAuthMode').innerText = mode==='login'? 'Switch to Sign Up' : 'Switch to Login';
+  $('authSubmit').dataset.mode = mode;
+  $('authMessage').innerText='';
+}
+
+function hideAuth(){ $('authModal').style.display='none'; }
+
+$('showLogin').addEventListener('click',()=>showAuth('login'));
+$('showSignup').addEventListener('click',()=>showAuth('signup'));
+$('closeAuth').addEventListener('click',hideAuth);
+$('toggleAuthMode').addEventListener('click',()=>{
+  const mode = $('authSubmit').dataset.mode === 'login' ? 'signup' : 'login';
+  showAuth(mode);
+});
+
+$('authSubmit').addEventListener('click',()=>{
+  const mode = $('authSubmit').dataset.mode || 'login';
+  const username = $('authUsername').value.trim();
+  const password = $('authPassword').value;
+  if(!username || !password){ $('authMessage').innerText='Please provide username and password'; return; }
+  const users = getUsers();
+  if(mode==='signup'){
+    if(users[username]){ $('authMessage').innerText='User exists — please login'; return; }
+    users[username] = { password: btoa(password), created: Date.now() };
+    saveUsers(users);
+    $('authMessage').innerText='Account created. You can login now.';
+  } else {
+    if(!users[username] || users[username].password !== btoa(password)){ $('authMessage').innerText='Invalid credentials'; return; }
+    // logged in
+    user = { username };
+    localStorage.setItem(settings.persistKey + '_user', username);
+    updateUserUI();
+    hideAuth();
+    showQuizArea();
+  }
+});
+
+/* Quick logout */
+$('logoutBtn').addEventListener('click',()=>{
+  user = null;
+  localStorage.removeItem(settings.persistKey + '_user');
+  updateUserUI();
+  hideQuizArea();
+});
+
+/* Load saved user on load */
+(function(){
+  const savedUser = localStorage.getItem(settings.persistKey + '_user');
+  if(savedUser){ user = {username: savedUser}; updateUserUI(); }
+})();
+
+function updateUserUI(){
+  $('userWelcome').innerText = user ? `Hello, ${user.username}` : 'Not logged in';
+  $('userEmail').innerText = user ? `@${user.username}` : '';
+}
+
+/* =========================
+   QUIZ initialization & rendering
+   ========================= */
+
+function prepareQuiz(){
+  // copy raw data deeply so randomization doesn't mutate base
+  quizData = rawQuizData.map(q => ({ q: q.q, options: q.options.map(o=>({...o})), correct: q.correct }));
+  // settings
+  perQuestionSeconds = parseInt($('perQInput').value) || 20;
+  totalSeconds = parseInt($('totalInput').value) || 180;
+  settings.randomizeQuestions = !!$('randQ').checked;
+  settings.randomizeOptions = !!$('randOpt').checked;
+
+  // randomize questions
+  if(settings.randomizeQuestions) shuffleArray(quizData);
+
+  // randomize options per question if requested
+  if(settings.randomizeOptions){
+    quizData.forEach(q => shuffleArray(q.options));
+  }
+
+  // update totals
+  $('totalQ').innerText = quizData.length;
+  currentIndex = 0;
+  answers = {};
+  perQTimeLeft = perQuestionSeconds;
+  totalTimeLeft = totalSeconds;
+  updateProgress();
+}
+
+/* Render a single question */
+function renderQuestion(idx){
+  const q = quizData[idx];
+  if(!q) return;
+  $('currentIndex').innerText = idx+1;
+  // question
+  $('questionText').innerHTML = q.q;
+  // options
+  const wrap = $('optionsWrap');
+  wrap.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const id = `opt_${idx}_${i}`;
+    const label = document.createElement('label');
+    label.className = 'option fadeIn';
+    label.dataset.opt = opt.id;
+    label.innerHTML = `<input type="radio" name="opt_${idx}" id="${id}" value="${opt.id}">${opt.text}`;
+    // mark selected if exists
+    if(answers[idx]===opt.id){ label.classList.add('checked'); label.querySelector('input').checked=true; }
+    wrap.appendChild(label);
+    // click handling
+    label.addEventListener('click', (e)=>{
+      // set selection for this idx
+      answers[idx] = opt.id;
+      // visual
+      Array.from(wrap.children).forEach(ch => ch.classList.remove('checked'));
+      label.classList.add('checked');
+      saveProgressToStorage(false);
+    });
+  });
+
+  // update nav buttons
+  $('prevBtn').disabled = idx===0;
+  $('nextBtn').style.display = (idx < quizData.length - 1) ? 'inline-block' : 'none';
+  $('submitBtn').style.display = (idx === quizData.length - 1) ? 'inline-block' : 'none';
+
+  // update pager
+  const pager = $('pager');
+  pager.innerHTML = '';
+  for(let i=0;i<quizData.length;i++){
+    const btn = document.createElement('button');
+    btn.innerText = i+1;
+    btn.className = (i===idx)?'active':'';
+    btn.addEventListener('click', ()=>{ goToQuestion(i) });
+    pager.appendChild(btn);
+  }
+
+  // reset per-question timer
+  resetPerQuestionTimer();
+  updateProgress();
+}
+
+/* Navigation */
+function goToQuestion(i){
+  currentIndex = i;
+  renderQuestion(currentIndex);
+}
+$('prevBtn').addEventListener('click', ()=>{ if(currentIndex>0){ currentIndex--; renderQuestion(currentIndex); }});
+$('nextBtn').addEventListener('click', ()=>{ if(currentIndex < quizData.length-1){ currentIndex++; renderQuestion(currentIndex); }});
+$('submitBtn').addEventListener('click', ()=>{ submitQuiz(); });
+
+/* Start quiz (after login) */
+$('startQuizBtn').addEventListener('click', ()=>{ 
+  if(!user){ showAuth('login'); return; }
+  beginQuiz();
+});
+
+/* Resume last */
+$('resumeBtn').addEventListener('click', ()=>{ resumeSaved(); });
+
+/* Begin quiz sequence */
+function beginQuiz(){
+  prepareQuiz();
+  showQuizArea();
+  renderQuestion(0);
+  startTimers();
+  updateSavedIndicator(false);
+}
+
+/* Show/Hide UI pieces */
+function showQuizArea(){
+  $('loginCard').style.display='none';
+  $('quizArea').style.display='block';
+  $('resultCard').style.display='none';
+}
+function hideQuizArea(){
+  $('loginCard').style.display='block';
+  $('quizArea').style.display='none';
+  $('resultCard').style.display='none';
+}
+
+/* =========================
+   Timers
+   ========================= */
+
+function startTimers(){
+  clearInterval(perQTimer); clearInterval(totalTimer);
+  perQTimeLeft = perQuestionSeconds;
+  totalTimeLeft = totalSeconds;
+  updateTimerDisplays();
+  perQTimer = setInterval(()=>{ perQTick(); },1000);
+  totalTimer = setInterval(()=>{ totalTick(); },1000);
+}
+
+function resetPerQuestionTimer(){
+  clearInterval(perQTimer);
+  perQTimeLeft = perQuestionSeconds;
+  updateTimerDisplays();
+  perQTimer = setInterval(()=>{ perQTick(); },1000);
+}
+
+function perQTick(){
+  perQTimeLeft--;
+  if(perQTimeLeft <= 0){
+    // auto-advance or submit
+    if(currentIndex < quizData.length - 1){
+      // leave unanswered if none selected
+      currentIndex++;
+      renderQuestion(currentIndex);
+    } else {
+      submitQuiz();
+    }
+  }
+  updateTimerDisplays();
+}
+
+function totalTick(){
+  totalTimeLeft--;
+  if(totalTimeLeft <= 0){
+    // auto-submit
+    submitQuiz();
+  }
+  updateTimerDisplays();
+}
+
+function updateTimerDisplays(){
+  $('perQuestionTimer').innerText = `Per Q: ${formatTime(perQTimeLeft)}`;
+  $('totalTimer').innerText = `Total: ${formatTime(totalTimeLeft)}`;
+}
+function formatTime(s){
+  if(s<0) s=0;
+  const m = Math.floor(s/60); const sec = s%60;
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+/* =========================
+   Submission & scoring
+   ========================= */
+
+function submitQuiz(){
+  // stop timers
+  clearInterval(perQTimer); clearInterval(totalTimer);
+  // compute score
+  let correct=0, wrong=0, unattempted=0;
+  quizData.forEach((q, idx) => {
+    const selected = answers[idx];
+    // find actual correct option id in this q (since we might have shuffled options)
+    const correctId = q.correct;
+    // But note: user may have shuffled options; ensure q.options array contains ids as originally defined.
+    if(!selected){ unattempted++; }
+    else if(selected === correctId){ correct++; }
+    else { wrong++; }
+  });
+
+  const total = quizData.length;
+  const score = correct;
+  const percentage = Math.round((score / total) * 100);
+
+  // display result
+  $('finalScore').innerText = `${score} / ${total}`;
+  $('percentage').innerHTML = `<div class="tiny">Percentage: <strong>${percentage}%</strong></div>`;
+  $('correctWrong').innerHTML = `<div class="tiny">Correct: <span style="color:var(--good)">${correct}</span> &nbsp; Wrong: <span style="color:var(--bad)">${wrong}</span> &nbsp; Unattempted: ${unattempted}</div>`;
+
+  // show result card
+  $('resultCard').style.display='block';
+  // hide quiz area controls (disable further selection)
+  // mark correct/wrong visually in summary area only
+  saveScore({ date: Date.now(), user: user?user.username:'guest', score, total, percentage });
+  updateScoreboard();
+  saveProgressToStorage(false); // final save
+}
+
+/* View summary */
+$('viewSummaryBtn').addEventListener('click', showSummary);
+$('closeSummary').addEventListener('click', ()=>{ $('summaryModal').style.display='none' });
+
+function showSummary(){
+  // show modal with question-by-question
+  const el = $('summaryContent');
+  el.innerHTML = '';
+  quizData.forEach((q, idx) => {
+    const wrapper = document.createElement('div');
+    wrapper.style.padding='10px';
+    wrapper.style.borderBottom='1px solid rgba(0,0,0,0.04)';
+    const your = answers[idx] || null;
+    // find correct option text in q.options
+    const correctOption = q.options.find(o=>o.id===q.correct);
+    const yourOption = q.options.find(o=>o.id===your);
+    wrapper.innerHTML = `<div style="font-weight:700">${idx+1}. ${q.q}</div>
+      <div class="tiny" style="margin-top:6px">Your Answer: ${yourOption ? yourOption.text : '<em>Unanswered</em>'} ${your && your===q.correct ? '<span style="color:var(--good)">✔</span>' : (your?'<span style="color:var(--bad)">✖</span>':'')}</div>
+      <div class="tiny">Correct Answer: ${correctOption ? correctOption.text : '—'}</div>
+    `;
+    el.appendChild(wrapper);
+  });
+  $('summaryModal').style.display='flex';
+}
+
+/* =========================
+   Storage: save progress & scoreboard
+   ========================= */
+
+function saveProgressToStorage(showMsg=true){
+  if(!user) return;
+  const payload = {
+    timestamp: Date.now(),
+    user: user.username,
+    quizData, // includes shuffled order and options
+    currentIndex,
+    answers,
+    perQTimeLeft,
+    totalTimeLeft,
+    perQuestionSeconds,
+    totalSeconds,
+    settings
+  };
+  localStorage.setItem(settings.persistKey + '_save_' + user.username, JSON.stringify(payload));
+  updateSavedIndicator(true);
+  if(showMsg) {
+    // small temporary visual feedback
+    $('savedIndicator').innerText = 'Yes';
+    setTimeout(()=>{ updateSavedIndicator(true); }, 1200);
+  }
+}
+
+function updateSavedIndicator(has){
+  // check if there is saved state
+  if(!user){ $('savedIndicator').innerText = 'No'; return; }
+  const s = localStorage.getItem(settings.persistKey + '_save_' + user.username);
+  $('savedIndicator').innerText = s ? 'Yes' : 'No';
+}
+$('saveProgressBtn').addEventListener('click', ()=>{ saveProgressToStorage(true); });
+
+function resumeSaved(){
+  if(!user){ showAuth('login'); return; }
+  const s = localStorage.getItem(settings.persistKey + '_save_' + user.username);
+  if(!s){ alert('No saved quiz found'); return; }
+  try {
+    const payload = JSON.parse(s);
+    quizData = payload.quizData;
+    answers = payload.answers || {};
+    currentIndex = payload.currentIndex || 0;
+    perQTimeLeft = payload.perQTimeLeft || payload.perQuestionSeconds || perQuestionSeconds;
+    totalTimeLeft = payload.totalTimeLeft || payload.totalSeconds || totalSeconds;
+    perQuestionSeconds = payload.perQuestionSeconds || perQuestionSeconds;
+    totalSeconds = payload.totalSeconds || totalSeconds;
+    settings = payload.settings || settings;
+    $('perQInput').value = perQuestionSeconds;
+    $('totalInput').value = totalSeconds;
+    $('randQ').checked = settings.randomizeQuestions;
+    $('randOpt').checked = settings.randomizeOptions;
+    $('totalQ').innerText = quizData.length;
+    showQuizArea();
+    renderQuestion(currentIndex);
+    // start timers using saved time
+    clearInterval(perQTimer); clearInterval(totalTimer);
+    perQTimer = setInterval(()=>{ perQTick(); },1000);
+    totalTimer = setInterval(()=>{ totalTick(); },1000);
+    updateSavedIndicator(true);
+  } catch(e){
+    console.error(e);
+    alert('Failed to resume: corrupted data');
+  }
+}
+
+/* Scoreboard: Save completed attempts */
+function saveScore(record){
+  const key = settings.persistKey + '_scores';
+  const arr = JSON.parse(localStorage.getItem(key) || '[]');
+  arr.unshift(record);
+  localStorage.setItem(key, JSON.stringify(arr.slice(0,50)));
+}
+function updateScoreboard(){
+  const key = settings.persistKey + '_scores';
+  const arr = JSON.parse(localStorage.getItem(key) || '[]');
+  const box = $('scoreboard');
+  box.innerHTML = '';
+  if(arr.length===0){ box.innerHTML = '<div class="tiny">No attempts yet</div>'; return; }
+  arr.slice(0,8).forEach(r => {
+    const d = new Date(r.date);
+    const node = document.createElement('div');
+    node.style.padding='6px';
+    node.style.borderBottom='1px solid rgba(0,0,0,0.04)';
+    node.innerHTML = `<div style="font-weight:700">${r.user} — ${r.score}/${r.total} <span class="tiny" style="float:right">${r.percentage}%</span></div>
+      <div class="tiny">${d.toLocaleString()}</div>`;
+    box.appendChild(node);
+  });
+}
+$('clearScores').addEventListener('click', ()=>{
+  if(confirm('Clear saved scoreboard?')){ localStorage.removeItem(settings.persistKey + '_scores'); updateScoreboard(); }
+});
+
+updateScoreboard();
+
+/* Autosave periodically */
+setInterval(()=>{ if(user) saveProgressToStorage(false); }, 60000); // every minute
+
+/* =========================
+   Misc helpers & UI binding
+   ========================= */
+
+function updateProgress(){
+  const total = quizData.length || 1;
+  const answered = Object.keys(answers).length;
+  const percent = Math.round((answered / total) * 100);
+  $('statProgress').innerText = `${percent}%`;
+  $('miniProgress').style.width = percent + '%';
+  $('progressBar').style.width = Math.round(((currentIndex+1)/total)*100) + '%';
+  $('statProgress').innerText = `${Math.round(((currentIndex+1)/total)*100)}%`;
+}
+
+$('retryBtn').addEventListener('click', ()=>{
+  if(confirm('Retry quiz? This will reset your progress.')){
+    beginQuiz();
+  }
+});
+
+$('downloadCertificate').addEventListener('click', async ()=>{
+  // create a certificate PDF using html2canvas + jsPDF
+  const { jsPDF } = window.jspdf;
+  const name = user ? user.username : 'Guest';
+  const scoreText = $('finalScore').innerText || '0/0';
+  const percentage = $('percentage').innerText || '';
+  // create a simple DOM certificate
+  const cert = document.createElement('div');
+  cert.style.width='900px';
+  cert.style.height='600px';
+  cert.style.display='flex';
+  cert.style.flexDirection='column';
+  cert.style.alignItems='center';
+  cert.style.justifyContent='center';
+  cert.style.background = '#fff';
+  cert.style.border = '12px solid '+ getComputedStyle(document.documentElement).getPropertyValue('--accent');
+  cert.innerHTML = `<div style="text-align:center;font-family:Arial,Helvetica,sans-serif;color:#333">
+    <h1 style="margin:0;font-size:40px">Certificate of Completion</h1>
+    <div style="margin-top:8px;font-size:14px;color:#666">This certifies that</div>
+    <div style="font-weight:800;margin-top:12px;font-size:28px">${name}</div>
+    <div style="margin-top:12px;font-size:16px">${scoreText} — ${percentage}</div>
+    <div style="margin-top:22px;font-size:12px;color:#666">Date: ${new Date().toLocaleDateString()}</div>
+  </div>`;
+  document.body.appendChild(cert);
+  try{
+    const canvas = await html2canvas(cert, { scale: 2 });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({ orientation: 'landscape' });
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`certificate_${name}_${Date.now()}.pdf`);
+  }catch(e){
+    alert('Certificate generation failed: ' + e.message);
+  } finally {
+    document.body.removeChild(cert);
+  }
+});
+
+/* Theme toggle */
+$('themeToggle').addEventListener('click', ()=>{
+  document.body.classList.toggle('dark');
+  $('themeToggle').innerText = document.body.classList.contains('dark') ? '☀️' : '🌙';
+  localStorage.setItem(settings.persistKey + '_theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+});
+// load theme
+(function(){ const t = localStorage.getItem(settings.persistKey + '_theme'); if(t==='dark') { document.body.classList.add('dark'); $('themeToggle').innerText='☀️'; } })();
+
+/* Save button for manual save */
+$('saveProgressBtn').addEventListener('click', ()=>{ saveProgressToStorage(true); });
+
+/* Show summary on finish */
+$('viewSummaryBtn').addEventListener('click', showSummary);
+
+/* update scoreboard on load */
+updateScoreboard();
+
+/* Start by showing login card if not logged, else show quiz controls */
+(function init(){
+  updateUserUI();
+  updateSavedIndicator();
+  // attach start keyboard handler for next
+  document.addEventListener('keydown', (e)=>{
+    if(e.key==='ArrowRight') $('nextBtn').click();
+    if(e.key==='ArrowLeft') $('prevBtn').click();
+  });
+})();
+
+/* =========================
+   Extra: quick resume on load if saved quiz exists
+   ========================= */
+window.addEventListener('load', ()=>{
+  // if user already logged & has saved game, show resume hint
+  if(user){
+    const s = localStorage.getItem(settings.persistKey + '_save_' + user.username);
+    if(s){
+      // reveal resume button visually
+      $('resumeBtn').style.display = 'inline-block';
+    }
+  }
+});
+</script>
+</body>
+</html>
